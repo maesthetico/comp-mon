@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інформаційно-довідкова система комплексного аналізу території</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        #map {
+            flex: 2;
+            height: 100%;
+        }
+        .sidebar {
+            flex: 1;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-width: 400px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+        h2 {
+            color: #3498db;
+            font-size: 1.4em;
+            margin-top: 20px;
+        }
+        .object-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .object-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .object-item:hover {
+            background-color: #d6eaf8;
+        }
+        .object-item.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tabs {
+            display: flex;
+            margin-top: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        .tab-content {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-top: none;
+            background-color: #fff;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .legend {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            line-height: 24px;
+            color: #555;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .info-table {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .info-table th {
+            width: 40%;
+            background-color: #f2f2f2;
+            padding: 5px;
+            text-align: left;
+        }
+        .info-table td {
+            padding: 5px;
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-top: 15px;
+        }
+        .filter-panel {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Інформаційно-довідкова система</h1>
+            
+            <div class="filter-panel">
+                <label for="subsystem-filter">Фільтр за підсистемою:</label>
+                <select id="subsystem-filter">
+                    <option value="all">Всі підсистеми</option>
+                    <option value="air">Моніторинг повітря</option>
+                    <option value="water">Моніторинг води</option>
+                    <option value="soil">Моніторинг ґрунтів</option>
+                    <option value="radiation">Моніторинг радіації</option>
+                    <option value="economic">Економічний моніторинг</option>
+                    <option value="energy">Енергетичний моніторинг</option>
+                    <option value="health">Моніторинг здоров'я</option>
+                </select>
+            </div>
+            
+            <h2>Об'єкти моніторингу</h2>
+            <ul class="object-list" id="object-list">
+            </ul>
+            
+            <div id="object-details">
+                <h2>Деталі об'єкту</h2>
+                <div id="object-info">
+                    <p>Оберіть об'єкт на карті або зі списку</p>
+                </div>
+                
+                <div class="tabs" id="tabs">
+                    <div class="tab active" data-tab="passport">Паспорт</div>
+                    <div class="tab" data-tab="parameters">Параметри</div>
+                </div>
+                
+                <div class="tab-content active" id="passport-content">
+                    <table class="info-table" id="passport-table">
+                        <tr>
+                            <th>Назва</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Ідентифікатор</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Адреса</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Координати</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Підсистема моніторингу</th>
+                            <td>-</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="tab-content" id="parameters-content">
+                    <table id="parameters-table">
+                        <thead>
+                            <tr>
+                                <th>Параметр</th>
+                                <th>Значення</th>
+                                <th>Одиниця виміру</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div id="map"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    
+    <script>
+        const map = L.map('map').setView([50.45, 30.52], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        const legend = L.control({position: 'bottomright'});
+        
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <i style="background: #e74c3c"></i> Моніторинг повітря<br>
+                <i style="background: #3498db"></i> Моніторинг води<br>
+                <i style="background: #8e44ad"></i> Моніторинг радіації<br>
+                <i style="background: #2ecc71"></i> Моніторинг ґрунтів<br>
+                <i style="background: #f39c12"></i> Економічний моніторинг<br>
+                <i style="background: #1abc9c"></i> Енергетичний моніторинг<br>
+                <i style="background: #e67e22"></i> Моніторинг здоров'я<br>
+            `;
+            return div;
+        };
+        
+        legend.addTo(map);
+        
+        const objects = [
+        {
+    id: 1,
+    name: "Станція моніторингу повітря Хрещатик",
+    identifier: "air-station-1001",
+    address: "м. Київ, вул. Хрещатик, 32А",
+    coordinates: [50.44719177205573, 30.52055945594389],
+    subsystem: "air",
+    description: "Станція моніторингу якості повітря в центрі міста",
+    parameters: [
+        { name: "PM1", value: 1.3, unit: "мкг/м³" },
+        { name: "PM2.5", value: 2.0, unit: "мкг/м³" },
+        { name: "PM10", value: 8.7, unit: "мкг/м³" },
+        { name: "Температура", value: 0.1, unit: "°C" },
+        { name: "Відносна вологість", value: 77.4, unit: "%" },
+        { name: "Атмосферний тиск", value: 1000, unit: "гПа" },
+        { name: "Оксид азоту (NO)", value: 21.85, unit: "мкг/м³" },
+        { name: "Діоксид азоту (NO₂)", value: 42.81, unit: "мкг/м³" },
+        { name: "Вуглекислий газ (CO₂)", value: 912.6, unit: "мг/м³" },
+        { name: "Озон (O₃)", value: 56.7, unit: "мкг/м³" },
+        { name: "Сірководень (H₂S)", value: 30.71, unit: "мкг/м³" },
+        { name: "Діоксид сірки (SO₂)", value: 12.74, unit: "мкг/м³" },
+        { name: "Формальдегід (CH₂O)", value: 0, unit: "мкг/м³" }
+    ]
+},
+{
+    id: 2,
+    name: "Станція моніторингу радіації Рейтарська",
+    identifier: "radiationmaps#14",
+    address: "м. Київ, вул. Рейтарська, 39",
+    coordinates: [50.454062974861024, 30.508020698271245],
+    subsystem: "radiation",
+    description: "Станція для визначення радіаційного фону",
+    parameters: [
+        { name: "γ-Радіація", value: 83, unit: "нЗв/год" }
+    ]
+},
+{
+    id: 3,
+    name: "Бювет Липинського",
+    identifier: "buvette-lk-125",
+    address: "м. Київ, Парк імені Олеся Гончара, вул. В'ячеслава Липинського",
+    coordinates: [50.449034524203164, 30.50468768321987],
+    subsystem: "water",
+    description: "Бювет питної води в парку імені Олеся Гончара. Глибина свердловини 153 м. Є можливість підключення до генератора.",
+    parameters: [
+        { name: "Каламутнiсть", value: 0.24, unit: "мг/дм3" },
+        { name: "Забарвленiсть", value: 0, unit: "градуси" },
+        { name: "Запах при 20°С", value: 1, unit: "бали" },
+        { name: "Запах при 60°С", value: 1, unit: "бали" },
+        { name: "Смак та присмак", value: 0, unit: "бали" },
+        { name: "Загальна жорсткість", value: 0.23, unit: "ммоль/дм3" },
+        { name: "Марганець", value: 0.006, unit: "мг/дм3" },
+        { name: "Залізо загальне", value: 0.07, unit: "мг/дм3" }
+    ]
+},
+{
+    id: 4,
+    name: "ТЕЦ-5",
+    identifier: "tec-5",
+    address: "м. Київ, вул. Промислова, 4А",
+    coordinates: [50.397969978433046, 30.56707922086309],
+    subsystem: "energy",
+    description: "Київська теплоелектроцентраль №5 - одне з найбільших енергетичних підприємств столиці",
+    parameters: [
+        { name: "Встановлена електрична потужність", value: 700, unit: "МВт" },
+        { name: "Встановлена теплова потужність", value: 1874, unit: "Гкал/год" },
+        { name: "Виробництво електроенергії", value: 2940000, unit: "МВт·год/рік" },
+        { name: "Виробництво теплової енергії", value: 3850000, unit: "Гкал/рік" },
+        { name: "Питома витрата умовного палива на електроенергію", value: 313.7, unit: "г/кВт·год" },
+        { name: "Питома витрата умовного палива на теплову енергію", value: 138.9, unit: "кг/Гкал" },
+        { name: "Річне споживання газу", value: 1100, unit: "млн м³" },
+        { name: "Викиди CO2", value: 1200, unit: "т/добу" },
+        { name: "Викиди NOx", value: 0.85, unit: "т/добу" },
+        { name: "Викиди SO2", value: 1.1, unit: "т/добу" },
+        { name: "Викиди твердих частинок", value: 0.23, unit: "т/добу" },
+        { name: "Використання води на технологічні потреби", value: 15000, unit: "м3/добу" },
+        { name: "ККД електричний", value: 38.5, unit: "%" },
+        { name: "ККД тепловий", value: 85.7, unit: "%" },
+        { name: "Коефіцієнт використання встановленої потужності", value: 47.8, unit: "%" }
+    ]
+},
+            {
+    id: 5,
+    name: "Міжнародний аеропорт 'Бориспіль'",
+    identifier: "kbp-airport",
+    address: "Бориспіль, Київська область, 08307",
+    coordinates: [50.3454, 30.8903],
+    subsystem: "economic",
+    description: "Головний міжнародний аеропорт України",
+    parameters: [
+        { name: "Пасажиропотік", value: 12550000, unit: "осіб/рік" },
+        { name: "Кількість робочих місць", value: 4200, unit: "од." },
+        { name: "Злети-посадки", value: 87600, unit: "од./рік" },
+        { name: "Вантажообіг", value: 38400, unit: "тонн/рік" },
+        { name: "Енергоспоживання", value: 6500000, unit: "кВт·год/місяць" },
+        { name: "Водоспоживання", value: 18500, unit: "м3/місяць" },
+        { name: "Кількість терміналів", value: 2, unit: "од." },
+        { name: "Річний дохід", value: 4850, unit: "млн грн/рік" },
+        { name: "Податкові відрахування", value: 745, unit: "млн грн/рік" },
+        { name: "Середня заробітна плата", value: 24500, unit: "грн" },
+        { name: "Кількість авіакомпаній", value: 43, unit: "од." },
+        { name: "Інвестиції в розвиток", value: 650, unit: "млн грн/рік" }
+    ]
+},
+{
+    id: 6,
+    name: "Ботанічний сад НУБіП України",
+    identifier: "nubip-botanical-garden",
+    address: "м. Київ, вул. Героїв Оборони, 2а",
+    coordinates: [50.382198060110866, 30.501913477490262],
+    subsystem: "soil",
+    description: "Ботанічний сад Національного університету біоресурсів і природокористування України площею 53 га. Містить колекцію з понад 700 видів рослин, включаючи рідкісні та зникаючі види.",
+    parameters: [
+        { name: "Площа", value: 53, unit: "га" },
+        { name: "Кількість видів рослин", value: 700, unit: "од." },
+        { name: "Гумус у ґрунті", value: 4.2, unit: "%" },
+        { name: "pH ґрунту", value: 6.9, unit: "" },
+        { name: "Рухомі сполуки фосфору", value: 152, unit: "мг/кг" },
+        { name: "Рухомі сполуки калію", value: 185, unit: "мг/кг" },
+        { name: "Бал бонітету ґрунту", value: 78, unit: "бали" },
+        { name: "Вологість ґрунту", value: 23, unit: "%" },
+        { name: "Кількість рідкісних видів", value: 24, unit: "од." }
+    ]
+},{
+    id: 7,
+    name: "Київська обласна клінічна лікарня №2",
+    identifier: "health-hospital-kokl2",
+    address: "м. Київ, вул. Віктора Некрасова, 49",
+    coordinates: [50.487274053247546, 30.42717032565078],
+    subsystem: "health",
+    description: "Багатопрофільний медичний заклад з високоспеціалізованим медичним обладнанням та кваліфікованим персоналом.",
+    parameters: [
+        { name: "Кількість ліжок", value: 450, unit: "од." },
+        { name: "Кількість медичного персоналу", value: 835, unit: "осіб" },
+        { name: "Кількість лікарів", value: 210, unit: "осіб" },
+        { name: "Кількість обслуговуваного населення", value: 98500, unit: "осіб" },
+        { name: "Частота захворювань дихальних шляхів", value: 412, unit: "на 10000 населення" },
+        { name: "Частота серцево-судинних захворювань", value: 487, unit: "на 10000 населення" },
+        { name: "Середня тривалість госпіталізації", value: 9.3, unit: "днів" },
+        { name: "Кількість операцій", value: 7200, unit: "на рік" },
+        { name: "Рівень забезпеченості ліками", value: 92, unit: "%" }
+    ]
+},
+            {
+    id: 8,
+    name: "Бювет Ахматової",
+    identifier: "buvette-akhm-06",
+    address: "м. Київ, вул. Анни Ахматової, 6",
+    coordinates: [50.413818376748964, 30.64046827506748],
+    subsystem: "water",
+    description: "Бювет питної води в Дарницькому районі. Глибина свердловини 98 м. Є можливість підключення до генератора.",
+    parameters: [
+        { name: "Каламутнiсть", value: 0.19, unit: "мг/дм3" },
+        { name: "Забарвленiсть", value: 0.91, unit: "градуси" },
+        { name: "Запах при 20°С", value: 1, unit: "бали" },
+        { name: "Запах при 60°С", value: 1, unit: "бали" },
+        { name: "Смак та присмак", value: 1, unit: "бали" },
+        { name: "Загальна жорсткість", value: 2.7, unit: "ммоль/дм3" },
+        { name: "Марганець", value: 0.011, unit: "мг/дм3" },
+        { name: "Залізо загальне", value: 0.12, unit: "мг/дм3" }
+    ]
+},
+{
+    id: 9,
+    name: "ТРЦ Ocean Plaza",
+    identifier: "econ-ocean-plaza",
+    address: "м. Київ, вул. Антоновича, 176",
+    coordinates: [50.41250205284457, 30.522273311760458],
+    subsystem: "energy",
+    description: "Торгово-розважальний центр з високими показниками енергоспоживання та системою енергоменеджменту",
+    parameters: [
+        { name: "Загальна площа", value: 165000, unit: "м²" },
+        { name: "Торгова площа", value: 72000, unit: "м²" },
+        { name: "Річне споживання електроенергії", value: 28900000, unit: "кВт·год" },
+        { name: "Питоме споживання електроенергії", value: 175, unit: "кВт·год/м²·рік" },
+        { name: "Встановлена електрична потужність", value: 8500, unit: "кВт" },
+        { name: "Максимальне навантаження", value: 6200, unit: "кВт" },
+        { name: "Річне споживання теплової енергії", value: 10500, unit: "Гкал" },
+        { name: "Питоме споживання теплової енергії", value: 63.6, unit: "кВт·год/м²·рік" },
+        { name: "Споживання води", value: 12500, unit: "м³/місяць" },
+        { name: "Викиди CO2", value: 16400, unit: "т/рік" },
+        { name: "Клас енергоефективності будівлі", value: "C", unit: "клас" },
+        { name: "Відсоток відновлюваної енергії", value: 3.5, unit: "%" },
+        { name: "Кількість відвідувачів", value: 45000, unit: "осіб/день" }
+    ]
+},
+            {
+    id: 10,
+    name: "Станція моніторингу повітря Вербицького",
+    identifier: "air-station-1002",
+    address: "м. Київ, вул. Архітектора Вербицького, 26",
+    coordinates: [50.407239086821775, 30.662533530134706],
+    subsystem: "air",
+    description: "Станція моніторингу якості повітря в житловому районі",
+    parameters: [
+        { name: "PM1", value: 5.2, unit: "мкг/м³" },
+        { name: "PM2.5", value: 8.6, unit: "мкг/м³" },
+        { name: "PM10", value: 15.8, unit: "мкг/м³" },
+        { name: "Температура", value: -0.1, unit: "°C" },
+        { name: "Відносна вологість", value: 82.4, unit: "%" },
+        { name: "Атмосферний тиск", value: 1001, unit: "гПа" },
+        { name: "Діоксид азоту (NO₂)", value: 57.04, unit: "мкг/м³" },
+        { name: "Чадний газ (CO)", value: 0.23, unit: "мг/м³" },
+        { name: "Аміак (NH₃)", value: 0.51, unit: "мкг/м³" },
+        { name: "Діоксид сірки (SO₂)", value: 273.51, unit: "мкг/м³" },
+        { name: "γ-Радіація", value: 91, unit: "нЗв/год" }
+    ]
+}
+        ];
+        
+        function getMarkerColor(subsystem) {
+            switch(subsystem) {
+                case 'air': return '#e74c3c';
+                case 'water': return '#3498db';
+                case 'radiation': return '#8e44ad';
+                case 'soil': return '#2ecc71';
+                case 'economic': return '#f39c12';
+                case 'energy': return '#1abc9c';
+                case 'health': return '#e67e22';
+                default: return '#95a5a6';
+            }
+        }
+        
+        function createMarkerIcon(subsystem) {
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background-color: ${getMarkerColor(subsystem)}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+                iconSize: [15, 15],
+                iconAnchor: [7, 7]
+            });
+        }
+        
+        let markers = [];
+        objects.forEach(obj => {
+            const marker = L.marker(obj.coordinates, {
+                icon: createMarkerIcon(obj.subsystem)
+            }).addTo(map);
+            
+            marker.bindTooltip(obj.name);
+            marker.objectId = obj.id;
+            
+            marker.on('click', function() {
+                showObjectDetails(obj.id);
+            });
+            
+            markers.push(marker);
+        });
+        
+        function renderObjectList(filter = 'all') {
+            const objectList = document.getElementById('object-list');
+            objectList.innerHTML = '';
+            
+            objects.forEach(obj => {
+                if (filter === 'all' || obj.subsystem === filter) {
+                    const li = document.createElement('li');
+                    li.className = 'object-item';
+                    li.textContent = obj.name;
+                    li.setAttribute('data-id', obj.id);
+                    
+                    li.addEventListener('click', function() {
+                        showObjectDetails(obj.id);
+                    });
+                    
+                    objectList.appendChild(li);
+                }
+            });
+        }
+        
+        document.getElementById('subsystem-filter').addEventListener('change', function() {
+            const filter = this.value;
+            renderObjectList(filter);
+            
+            markers.forEach((marker, index) => {
+                const obj = objects[index];
+                if (filter === 'all' || obj.subsystem === filter) {
+                    marker.addTo(map);
+                } else {
+                    marker.remove();
+                }
+            });
+        });
+        
+        function showObjectDetails(objectId) {
+            const obj = objects.find(o => o.id === Number(objectId));
+            if (!obj) return;
+
+            document.querySelectorAll('.object-item').forEach(item => {
+                item.classList.remove('active');
+                if (Number(item.getAttribute('data-id')) === obj.id) {
+                    item.classList.add('active');
+                }
+            });
+
+            document.querySelector('#passport-table tr:nth-child(1) td').textContent = obj.name;
+            document.querySelector('#passport-table tr:nth-child(2) td').textContent = obj.identifier;
+            document.querySelector('#passport-table tr:nth-child(3) td').textContent = obj.address;
+            document.querySelector('#passport-table tr:nth-child(4) td').textContent = `${obj.coordinates[0]}, ${obj.coordinates[1]}`;
+            
+            const subsystemNames = {
+                'air': 'Моніторинг повітря',
+                'water': 'Моніторинг води',
+                'soil': 'Моніторинг ґрунтів',
+                'radiation': 'Моніторинг радіації',
+                'economic': 'Економічний моніторинг',
+                'energy': 'Енергетичний моніторинг',
+                'health': 'Моніторинг здоров\'я'
+            };
+            
+            document.querySelector('#passport-table tr:nth-child(5) td').textContent = subsystemNames[obj.subsystem] || '-';
+            
+            const paramsTable = document.getElementById('parameters-table').querySelector('tbody');
+            paramsTable.innerHTML = '';
+            
+            obj.parameters.forEach(param => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${param.name}</td>
+                    <td>${param.value}</td>
+                    <td>${param.unit}</td>
+                `;
+                paramsTable.appendChild(row);
+            });
+            
+            map.setView(obj.coordinates, 14);
+        }
+        
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const tabContent = this.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`${tabContent}-content`).classList.add('active');
+            });
+        });
+        
+        renderObjectList();
+        
+        function getSubsystemName(subsystem) {
+            const subsystemNames = {
+                'air': 'Моніторинг повітря',
+                'water': 'Моніторинг води',
+                'soil': 'Моніторинг ґрунтів',
+                'radiation': 'Моніторинг радіації',
+                'economic': 'Економічний моніторинг',
+                'energy': 'Енергетичний моніторинг',
+                'health': 'Моніторинг здоров\'я'
+            };
+            
+            return subsystemNames[subsystem] || 'Невідома підсистема';
+        }
+    </script>
+</body>
+</html>
