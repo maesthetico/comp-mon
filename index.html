@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інформаційно-довідкова система комплексного аналізу території</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #map {
+            flex: 2;
+            height: 100%;
+            width: 100%;
+        }
+
+        .sidebar {
+            flex: 1;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-width: 400px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+
+        h2 {
+            color: #3498db;
+            font-size: 1.4em;
+            margin-top: 20px;
+        }
+
+        .object-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .object-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .object-item:hover {
+            background-color: #d6eaf8;
+        }
+
+        .object-item.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            margin-top: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-top: none;
+            background-color: #fff;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .legend {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            line-height: 24px;
+            color: #555;
+        }
+
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+
+        .info-table {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .info-table th {
+            width: 40%;
+            background-color: #f2f2f2;
+            padding: 5px;
+            text-align: left;
+        }
+
+        .info-table td {
+            padding: 5px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-top: 15px;
+        }
+
+        .filter-panel {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .parameter-filters {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .filter-group {
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #eef5fa;
+            border-radius: 4px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+
+        .checkbox-item input {
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .chart-tab-content {
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .range-filter {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .range-filter input {
+            flex: 1;
+            margin-right: 5px;
+        }
+
+        .range-filter span {
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+
+        .chart-selector {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+
+        .chart-selector select {
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .tab-button {
+            padding: 8px 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .tab-button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .pollution-index {
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            color: white;
+            text-align: center;
+        }
+
+        .index-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .index-description {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .index-class {
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Інформаційно-довідкова система</h1>
+
+            <div class="filter-panel">
+                <label for="subsystem-filter">Фільтр за підсистемою:</label>
+                <select id="subsystem-filter">
+                    <option value="all">Всі підсистеми</option>
+                    <option value="air">Моніторинг повітря</option>
+                    <option value="water">Моніторинг води</option>
+                    <option value="soil">Моніторинг ґрунтів</option>
+                    <option value="radiation">Моніторинг радіації</option>
+                    <option value="economic">Економічний моніторинг</option>
+                    <option value="energy">Енергетичний моніторинг</option>
+                    <option value="health">Моніторинг здоров'я</option>
+                </select>
+
+                <div class="parameter-filters" id="air-filters">
+                    <div class="filter-group">
+                        <label>Фільтр за показниками якості повітря:</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="radio" name="air-param" id="air-pm25" data-param="PM2.5" data-unit="мкг/м³"
+                                    checked>
+                                <label for="air-pm25">PM2.5</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="radio" name="air-param" id="air-pm10" data-param="PM10" data-unit="мкг/м³">
+                                <label for="air-pm10">PM10</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="radio" name="air-param" id="air-no2" data-param="NO₂" data-unit="мкг/м³">
+                                <label for="air-no2">NO₂</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="radio" name="air-param" id="air-so2" data-param="SO₂" data-unit="мкг/м³">
+                                <label for="air-so2">SO₂</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label id="param-range-label">Діапазон PM2.5 (мкг/м³):</label>
+                        <div class="range-filter">
+                            <span>Від:</span>
+                            <input type="number" id="param-min" min="0" step="0.1" value="0">
+                            <span>До:</span>
+                            <input type="number" id="param-max" min="0" step="0.1" value="100">
+                        </div>
+                    </div>
+                </div>
+
+                <button id="apply-filters">Застосувати фільтри</button>
+            </div>
+
+            <h2>Об'єкти моніторингу</h2>
+            <ul class="object-list" id="object-list">
+            </ul>
+
+            <div id="object-details">
+                <h2>Деталі об'єкту</h2>
+                <div id="object-info">
+                    <p>Оберіть об'єкт на карті або зі списку</p>
+                </div>
+
+                <div class="tabs" id="tabs">
+                    <div class="tab active" data-tab="passport">Паспорт</div>
+                    <div class="tab" data-tab="parameters">Параметри</div>
+                    <div class="tab" data-tab="charts">Графіки</div>
+                </div>
+
+                <div class="tab-content active" id="passport-content">
+                    <div id="pollution-index-container"></div>
+                    <table class="info-table" id="passport-table">
+                        <tr>
+                            <th>Назва</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Ідентифікатор</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Адреса</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Координати</th>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <th>Підсистема моніторингу</th>
+                            <td>-</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="tab-content" id="parameters-content">
+                    <table id="parameters-table">
+                        <thead>
+                            <tr>
+                                <th>Параметр</th>
+                                <th>Значення</th>
+                                <th>Одиниця виміру</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-content" id="charts-content">
+                    <div class="chart-selector">
+                        <label for="parameter-select">Оберіть параметр для відображення графіку:</label>
+                        <select id="parameter-select"></select>
+
+
+
+                        <div class="chart-container">
+                            <canvas id="parameter-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map" style="width: 100%; height: 100%;"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+
+    <script>
+        const map = L.map('map').setView([50.45, 30.52], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const legend = L.control({ position: 'bottomright' });
+
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <i style="background: #e74c3c"></i> Моніторинг повітря<br>
+                <i style="background: #3498db"></i> Моніторинг води<br>
+                <i style="background: #8e44ad"></i> Моніторинг радіації<br>
+                <i style="background: #2ecc71"></i> Моніторинг ґрунтів<br>
+                <i style="background: #f39c12"></i> Економічний моніторинг<br>
+                <i style="background: #1abc9c"></i> Енергетичний моніторинг<br>
+                <i style="background: #e67e22"></i> Моніторинг здоров'я<br>
+            `;
+            return div;
+        };
+
+        legend.addTo(map);
+
+        const subsystemColors = {
+            'air': '#e74c3c',
+            'water': '#3498db',
+            'radiation': '#8e44ad',
+            'soil': '#2ecc71',
+            'economic': '#f39c12',
+            'energy': '#1abc9c',
+            'health': '#e67e22'
+        };
+
+        let markers = [];
+        let activeMarker = null;
+        let currentChart = null;
+        let objects = [];
+
+        function createMarkerIcon(subsystem) {
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background-color: ${subsystemColors[subsystem] || '#95a5a6'}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+                iconSize: [15, 15],
+                iconAnchor: [7, 7]
+            });
+        }
+
+        function createMarkers() {
+            markers.forEach(marker => marker.remove());
+            markers = [];
+
+            filteredObjects.forEach(obj => {
+                const marker = L.marker(obj.coordinates, {
+                    icon: createMarkerIcon(obj.subsystem)
+                }).addTo(map);
+
+                marker.bindTooltip(obj.name);
+                marker.objectId = obj.id;
+
+                marker.on('click', function () {
+                    tDetailsWithStats(obj.id);
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        function renderObjectList() {
+            const objectList = document.getElementById('object-list');
+            objectList.innerHTML = '';
+
+            filteredObjects.forEach(obj => {
+                const li = document.createElement('li');
+                li.className = 'object-item';
+                li.textContent = obj.name;
+                li.setAttribute('data-id', obj.id);
+
+                li.addEventListener('click', function () {
+                    tDetailsWithStats(obj.id);
+                });
+
+                objectList.appendChild(li);
+            });
+        }
+
+        function filterBySubsystem(subsystem) {
+
+            if (activeMarker) {
+                const prevObj = objects.find(o => o.id === activeMarker);
+                if (prevObj) {
+                    const markerIndex = markers.findIndex(m => m.objectId === prevObj.id);
+                    if (markerIndex !== -1) {
+                        markers[markerIndex].setIcon(createMarkerIcon(prevObj.subsystem));
+                    }
+                }
+                activeMarker = null;
+
+
+                document.querySelector('#passport-table tr:nth-child(1) td').textContent = '-';
+                document.querySelector('#passport-table tr:nth-child(2) td').textContent = '-';
+                document.querySelector('#passport-table tr:nth-child(3) td').textContent = '-';
+                document.querySelector('#passport-table tr:nth-child(4) td').textContent = '-';
+                document.querySelector('#passport-table tr:nth-child(5) td').textContent = '-';
+
+                const paramsTable = document.getElementById('parameters-table').querySelector('tbody');
+                paramsTable.innerHTML = '';
+
+                const parameterSelect = document.getElementById('parameter-select');
+                parameterSelect.innerHTML = '';
+
+
+                if (currentChart) {
+                    currentChart.destroy();
+                    currentChart = null;
+                }
+
+
+                document.getElementById('object-info').innerHTML = '<p>Оберіть об\'єкт на карті або зі списку</p>';
+                document.getElementById('object-info').style.display = 'block';
+            }
+
+            if (subsystem === 'all') {
+                filteredObjects = [...objects];
+
+
+                const container = document.getElementById('pollution-index-container');
+                if (container) {
+                    container.innerHTML = '';
+                }
+            } else {
+                filteredObjects = objects.filter(obj => obj.subsystem === subsystem);
+
+
+                addPollutionIndexContainer();
+
+
+                const container = document.getElementById('pollution-index-container');
+
+                if (subsystem === 'air') {
+                    const airStations = objects.filter(o => o.subsystem === 'air');
+                    const pollutionIndex = calculateAirPollutionIndex(airStations);
+
+                    if (container) {
+                        displayPollutionIndex(container, pollutionIndex);
+                    }
+                } else if (subsystem === 'radiation') {
+                    const radiationStations = objects.filter(o => o.subsystem === 'radiation');
+
+                    let sum = 0;
+                    let validStations = 0;
+
+                    for (let station of radiationStations) {
+                        const stationIndex = calculateRadiationIndex(station);
+                        if (stationIndex > 0) {
+                            sum += stationIndex;
+                            validStations++;
+                        }
+                    }
+
+                    const avgRadiationIndex = validStations > 0 ? sum / validStations : 0;
+
+                    if (container && avgRadiationIndex > 0) {
+                        displayRadiationIndex(container, avgRadiationIndex);
+                    }
+                } else if (subsystem === 'water') {
+                    const waterStations = objects.filter(o => o.subsystem === 'water');
+
+                    let sum = 0;
+                    let validStations = 0;
+
+                    for (let station of waterStations) {
+                        const stationIndex = calculateWaterQualityIndex(station);
+                        if (stationIndex > 0) {
+                            sum += stationIndex;
+                            validStations++;
+                        }
+                    }
+
+                    const avgWaterQualityIndex = validStations > 0 ? sum / validStations : 0;
+
+                    if (container && avgWaterQualityIndex > 0) {
+                        displayWaterQualityIndex(container, avgWaterQualityIndex);
+                    }
+                }
+                else if (subsystem === 'energy') {
+                    const energyStations = objects.filter(o => o.subsystem === 'energy');
+                    const overallIndex = calculateOverallCarbonEfficiencyIndex(energyStations);
+
+                    if (container && overallIndex >= 0) {
+                        displayOverallCarbonEfficiencyIndex(container, overallIndex);
+                    }
+                }
+                else {
+
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+                }
+            }
+
+            document.querySelectorAll('.parameter-filters').forEach(filter => {
+                filter.style.display = 'none';
+            });
+
+            if (subsystem !== 'all') {
+                const filterElement = document.getElementById(`${subsystem}-filters`);
+                if (filterElement) {
+                    filterElement.style.display = 'block';
+                }
+            }
+
+            createMarkers();
+            renderObjectList();
+        }
+
+        function filterByParameters() {
+            const subsystem = document.getElementById('subsystem-filter').value;
+
+            if (subsystem === 'all') {
+                filteredObjects = [...objects];
+            } else {
+                filteredObjects = objects.filter(obj => obj.subsystem === subsystem);
+
+                if (subsystem === 'air') {
+                    const selectedParam = document.querySelector('input[name="air-param"]:checked');
+                    if (selectedParam) {
+                        const paramName = selectedParam.getAttribute('data-param');
+
+                        const paramMin = parseFloat(document.getElementById('param-min').value) || 0;
+                        const paramMax = parseFloat(document.getElementById('param-max').value) || 100;
+
+                        filteredObjects = filteredObjects.filter(obj => {
+                            const param = obj.parameters.find(p => p.name.includes(paramName));
+                            return param ? (param.value >= paramMin && param.value <= paramMax) : false;
+                        });
+                    }
+                }
+            }
+
+            createMarkers();
+            renderObjectList();
+        }
+
+        function createParameterChart(obj, paramName, chartType = 'bar') {
+            if (!obj.history || !obj.history[paramName]) return;
+
+            const historyData = obj.history[paramName];
+            historyData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const chartCanvas = document.getElementById('parameter-chart');
+
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            let unit = '';
+            const paramObj = obj.parameters.find(p => p.name === paramName);
+            if (paramObj) {
+                unit = paramObj.unit;
+            }
+
+            const labels = historyData.map(item => item.date);
+            const values = historyData.map(item => item.value);
+
+            let chartConfig = {};
+
+            if (chartType === 'bar') {
+                chartConfig = {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `${paramName}, ${unit}`,
+                            data: values,
+                            backgroundColor: subsystemColors[obj.subsystem] || '#3498db',
+                            borderColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: unit
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `Динаміка зміни показника "${paramName}"`
+                            }
+                        }
+                    }
+                };
+            } else if (chartType === 'pie') {
+                const otherParams = obj.parameters
+                    .filter(p => p.name !== paramName && p.unit === unit)
+                    .slice(0, 4);
+
+                const pieLabels = [paramName, ...otherParams.map(p => p.name)];
+                const pieValues = [paramObj ? paramObj.value : 0, ...otherParams.map(p => p.value)];
+                const pieColors = [
+                    subsystemColors[obj.subsystem],
+                    '#1abc9c', '#3498db', '#9b59b6', '#e67e22', '#f1c40f'
+                ];
+
+                chartConfig = {
+                    type: 'pie',
+                    data: {
+                        labels: pieLabels,
+                        datasets: [{
+                            data: pieValues,
+                            backgroundColor: pieColors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `Порівняння показників (${unit})`
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (tooltipItem) {
+                                        return `${tooltipItem.label}: ${tooltipItem.raw} ${unit}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+
+            currentChart = new Chart(chartCanvas, chartConfig);
+        }
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                const tabContent = this.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`${tabContent}-content`).classList.add('active');
+            });
+        });
+
+        document.getElementById('parameter-select').addEventListener('change', function () {
+            const objectId = activeMarker;
+            const paramName = this.value;
+
+            if (objectId && paramName) {
+                const obj = objects.find(o => o.id === objectId);
+                if (obj) {
+                    createParameterChart(obj, paramName, 'bar');
+                }
+            }
+        });
+
+        document.getElementById('subsystem-filter').addEventListener('change', function () {
+            filterBySubsystem(this.value);
+        });
+
+        document.getElementById('apply-filters').addEventListener('click', function () {
+            filterByParameters();
+        });
+
+        function getSubsystemName(subsystem) {
+            const subsystemNames = {
+                'air': 'Моніторинг повітря',
+                'water': 'Моніторинг води',
+                'soil': 'Моніторинг ґрунтів',
+                'radiation': 'Моніторинг радіації',
+                'economic': 'Економічний моніторинг',
+                'energy': 'Енергетичний моніторинг',
+                'health': 'Моніторинг здоров\'я'
+            };
+
+            return subsystemNames[subsystem] || 'Невідома підсистема';
+        }
+
+        function calculateAverage(values) {
+            if (!values || values.length === 0) return 0;
+            return values.reduce((sum, val) => sum + val, 0) / values.length;
+        }
+
+        function calculateMinMax(values) {
+            if (!values || values.length === 0) return { min: 0, max: 0 };
+            return {
+                min: Math.min(...values),
+                max: Math.max(...values)
+            };
+        }
+
+        function calculateTrend(historyData) {
+            if (!historyData || historyData.length < 2) return 'stable';
+
+            const values = historyData.map(item => item.value);
+            const firstValue = values[0];
+            const lastValue = values[values.length - 1];
+
+            const percentChange = ((lastValue - firstValue) / firstValue) * 100;
+
+            if (percentChange > 5) return 'increasing';
+            if (percentChange < -5) return 'decreasing';
+            return 'stable';
+        }
+
+        function addStatisticsToParams(obj) {
+            if (!obj.history) return;
+
+            Object.keys(obj.history).forEach(paramName => {
+                const historyData = obj.history[paramName];
+                const values = historyData.map(item => item.value);
+
+                const avg = calculateAverage(values);
+                const { min, max } = calculateMinMax(values);
+                const trend = calculateTrend(historyData);
+
+                const paramRows = Array.from(document.querySelectorAll('#parameters-table tbody tr')).filter(
+                    row => row.querySelector('td').textContent === paramName
+                );
+
+                if (paramRows.length > 0) {
+                    const paramRow = paramRows[0];
+
+                    const statRow = document.createElement('tr');
+                    statRow.className = 'param-stats';
+                    statRow.innerHTML = `
+                <td colspan="3">
+                    <small>
+                        <strong>Статистика:</strong> 
+                        Сер: ${avg.toFixed(2)}, 
+                        Мін: ${min.toFixed(2)}, 
+                        Макс: ${max.toFixed(2)}, 
+                        Тренд: ${getTrendText(trend)}
+                    </small>
+                </td>
+            `;
+
+                    paramRow.parentNode.insertBefore(statRow, paramRow.nextSibling);
+                }
+            });
+        }
+
+        function getTrendText(trend) {
+            switch (trend) {
+                case 'increasing': return 'зростає ↑';
+                case 'decreasing': return 'знижується ↓';
+                default: return 'стабільний →';
+            }
+        }
+
+        function tDetails(objectId) {
+            const numericId = Number(objectId);
+            const obj = objects.find(o => Number(o.id) === numericId);
+
+            if (!obj) {
+                console.error(`Об'єкт з ID ${objectId} не знайдено`);
+                return;
+            }
+
+            document.querySelectorAll('.object-item').forEach(item => {
+                item.classList.remove('active');
+                if (Number(item.getAttribute('data-id')) === obj.id) {
+                    item.classList.add('active');
+                }
+            });
+
+            document.querySelector('#passport-table tr:nth-child(1) td').textContent = obj.name;
+            document.querySelector('#passport-table tr:nth-child(2) td').textContent = obj.identifier;
+            document.querySelector('#passport-table tr:nth-child(3) td').textContent = obj.address;
+            document.querySelector('#passport-table tr:nth-child(4) td').textContent = `${obj.coordinates[0]}, ${obj.coordinates[1]}`;
+
+            const subsystemNames = {
+                'air': 'Моніторинг повітря',
+                'water': 'Моніторинг води',
+                'soil': 'Моніторинг ґрунтів',
+                'radiation': 'Моніторинг радіації',
+                'economic': 'Економічний моніторинг',
+                'energy': 'Енергетичний моніторинг',
+                'health': 'Моніторинг здоров\'я'
+            };
+
+            document.querySelector('#passport-table tr:nth-child(5) td').textContent = subsystemNames[obj.subsystem] || '-';
+
+            const paramsTable = document.getElementById('parameters-table').querySelector('tbody');
+            paramsTable.innerHTML = '';
+
+            obj.parameters.forEach(param => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td>${param.name}</td>
+            <td>${param.value}</td>
+            <td>${param.unit}</td>
+        `;
+                paramsTable.appendChild(row);
+            });
+
+            const parameterSelect = document.getElementById('parameter-select');
+            parameterSelect.innerHTML = '';
+
+            if (obj.history) {
+                Object.keys(obj.history).forEach(paramName => {
+                    const option = document.createElement('option');
+                    option.value = paramName;
+                    option.textContent = paramName;
+                    parameterSelect.appendChild(option);
+                });
+
+                if (Object.keys(obj.history).length > 0) {
+                    const firstParam = Object.keys(obj.history)[0];
+                    createParameterChart(obj, firstParam, 'bar');
+                }
+            }
+
+
+            map.setView(obj.coordinates, 17);
+
+
+            if (activeMarker) {
+                const prevObj = objects.find(o => o.id === activeMarker);
+                if (prevObj) {
+                    const markerIndex = markers.findIndex(m => m.objectId === prevObj.id);
+                    if (markerIndex !== -1) {
+                        markers[markerIndex].setIcon(createMarkerIcon(prevObj.subsystem));
+                    }
+                }
+            }
+
+            activeMarker = obj.id;
+
+            const markerIndex = markers.findIndex(m => m.objectId === obj.id);
+            if (markerIndex !== -1) {
+                const activeIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color: ${subsystemColors[obj.subsystem]}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px #333;"></div>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
+                markers[markerIndex].setIcon(activeIcon);
+            }
+        }
+
+        function tDetailsWithStats(objectId) {
+            tDetails(objectId);
+
+            const obj = objects.find(o => o.id === Number(objectId));
+            if (obj) {
+
+                addPollutionIndexContainer();
+
+                setTimeout(() => {
+                    addStatisticsToParams(obj);
+
+
+                    const container = document.getElementById('pollution-index-container');
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+
+
+                    if (obj.subsystem === 'air') {
+                        const pollutionIndex = calculateStationPollutionIndex(obj);
+                        if (container && pollutionIndex > 0) {
+                            displayPollutionIndex(container, pollutionIndex);
+                        }
+                    } else if (obj.subsystem === 'radiation') {
+                        const radiationIndex = calculateRadiationIndex(obj);
+                        if (container && radiationIndex > 0) {
+                            displayRadiationIndex(container, radiationIndex);
+                        }
+                    } else if (obj.subsystem === 'water') {
+                        const waterQualityIndex = calculateWaterQualityIndex(obj);
+                        if (container && waterQualityIndex > 0) {
+                            displayWaterQualityIndex(container, waterQualityIndex);
+                        }
+                    } else if (obj.subsystem === 'energy') {
+                        const carbonIndex = calculateCarbonEfficiencyIndex(obj);
+                        if (container && carbonIndex > 0) {
+
+                            const isPlant = obj.name.includes('ТЕЦ');
+                            displayCarbonEfficiencyIndex(container, carbonIndex, isPlant);
+                        }
+                    } else {
+
+                        if (container) {
+                            container.innerHTML = '';
+                        }
+                    }
+                }, 100);
+            }
+        }
+
+        const config = {
+            apiUrl: 'https://sheetdb.io/api/v1/ancojsgvdamvn',
+            sheets: {
+                objects: '?sheet=Objects',
+                parameters: '?sheet=Parameters',
+                history: '?sheet=History'
+            }
+        };
+
+
+        async function fetchDataFromSheetDB() {
+            try {
+                const [objectsResponse, parametersResponse, historyResponse] = await Promise.all([
+                    fetch(config.apiUrl + config.sheets.objects),
+                    fetch(config.apiUrl + config.sheets.parameters),
+                    fetch(config.apiUrl + config.sheets.history)
+                ]);
+
+                if (!objectsResponse.ok || !parametersResponse.ok || !historyResponse.ok) {
+                    throw new Error('Помилка завантаження даних з SheetDB');
+                }
+
+                const objectsData = await objectsResponse.json();
+                const parametersData = await parametersResponse.json();
+                const historyData = await historyResponse.json();
+
+                return {
+                    objects: objectsData,
+                    parameters: parametersData,
+                    history: historyData
+                };
+            } catch (error) {
+                console.error('Помилка при завантаженні даних:', error);
+                return null;
+            }
+        }
+
+        function processSheetData(data) {
+            if (!data) return [];
+
+            const { objects, parameters, history } = data;
+
+            const processedObjects = objects.map(obj => {
+                const coordsArray = obj.coordinates.split(',').map(coord => parseFloat(coord.trim()));
+
+                const objectParams = parameters.filter(param => param.object_id == obj.id)
+                    .map(param => ({
+                        name: param.parameter_name,
+                        value: isNaN(parseFloat(param.value)) ? param.value : parseFloat(param.value),
+                        unit: param.unit
+                    }));
+
+                const objectHistory = {};
+                history.filter(h => parseInt(h.object_id) === parseInt(obj.id)).forEach(h => {
+                    if (!objectHistory[h.parameter_name]) {
+                        objectHistory[h.parameter_name] = [];
+                    }
+                    objectHistory[h.parameter_name].push({
+                        date: h.date,
+                        value: isNaN(parseFloat(h.value)) ? h.value : parseFloat(h.value)
+                    });
+                });
+
+                return {
+                    id: parseInt(obj.id),
+                    name: obj.name,
+                    identifier: obj.identifier,
+                    address: obj.address,
+                    coordinates: coordsArray,
+                    subsystem: obj.subsystem,
+                    description: obj.description,
+                    parameters: objectParams,
+                    history: objectHistory
+                };
+            });
+
+            return processedObjects;
+        }
+
+
+        function calculateStationPollutionIndex(station) {
+
+            let pm25Param = station.parameters.find(p => p.name === "PM2.5");
+            if (!pm25Param) return 0;
+
+            let currentConcentration = pm25Param.value;
+
+
+            let seasonalConcentration = 0;
+            if (station.history && station.history["PM2.5"]) {
+                let historyData = station.history["PM2.5"];
+                seasonalConcentration = historyData.reduce((sum, item) => sum + item.value, 0) / historyData.length;
+            } else {
+
+                seasonalConcentration = currentConcentration * 0.9;
+            }
+
+
+            if (seasonalConcentration <= 0) return 0;
+
+            return currentConcentration / seasonalConcentration;
+        }
+
+
+        function calculateAirPollutionIndex(stations) {
+            if (!stations || stations.length === 0) return 0;
+
+            let validStations = 0;
+            let sum = 0;
+
+            for (let station of stations) {
+                let stationIndex = calculateStationPollutionIndex(station);
+                if (stationIndex > 0) {
+                    sum += stationIndex;
+                    validStations++;
+                }
+            }
+
+            return validStations > 0 ? sum / validStations : 0;
+        }
+
+
+        function getPollutionClass(index) {
+            if (index >= 1.5) {
+                return {
+                    class: 1,
+                    description: "Високе забруднення",
+                    color: "#e74c3c" // Червоний
+                };
+            } else if (index >= 1.0 && index < 1.5) {
+                return {
+                    class: 2,
+                    description: "Підвищене забруднення",
+                    color: "#f39c12" // Оранжевий
+                };
+            } else if (index >= 0.6 && index < 1.0) {
+                return {
+                    class: 3,
+                    description: "Знижене забруднення",
+                    color: "#f1c40f" // Жовтий
+                };
+            } else {
+                return {
+                    class: 4,
+                    description: "Слабке забруднення",
+                    color: "#2ecc71" // Зелений
+                };
+            }
+        }
+
+
+        function displayPollutionIndex(containerElement, index) {
+            if (!containerElement) return;
+
+
+            containerElement.innerHTML = '';
+
+
+            if (index <= 0) return;
+
+
+            const pollutionClass = getPollutionClass(index);
+
+
+            const html = `
+        <div class="pollution-index" style="background-color: ${pollutionClass.color}; padding: 15px; border-radius: 5px; margin-bottom: 20px; color: white; text-align: center;">
+            <div class="index-value" style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">${index.toFixed(2)}</div>
+            <div class="index-description">${pollutionClass.description}</div>
+        </div>`;
+
+
+            containerElement.innerHTML = html;
+        }
+
+
+        function addPollutionIndexContainer() {
+
+            if (!document.getElementById('pollution-index-container')) {
+                const objectDetails = document.getElementById('object-details');
+                const objectInfo = document.getElementById('object-info');
+
+                if (objectDetails && objectInfo) {
+                    const indexContainer = document.createElement('div');
+                    indexContainer.id = 'pollution-index-container';
+                    objectDetails.insertBefore(indexContainer, objectInfo.nextSibling);
+                }
+            }
+        }
+
+
+        function calculateRadiationIndex(station) {
+
+            let radiationParam = station.parameters.find(p => p.name === "γ-Радіація");
+            if (!radiationParam) return 0;
+
+
+            let radiationValue = parseFloat(radiationParam.value);
+
+
+            return radiationValue / 1000; // нЗв/год -> мкЗв/год
+        }
+
+
+        function getRadiationClass(index) {
+            if (index > 1.2) {
+                return {
+                    description: "Небезпечний радіаційний фон",
+                    color: "#e74c3c" // Червоний
+                };
+            } else if (index >= 0.3) {
+                return {
+                    description: "Підвищений радіаційний фон",
+                    color: "#f39c12" // Оранжевий
+                };
+            } else if (index >= 0.1) {
+                return {
+                    description: "Звичайний радіаційний фон",
+                    color: "#2ecc71" // Зелений
+                };
+            } else {
+                return {
+                    description: "Безпечний радіаційний фон",
+                    color: "#27ae60" // Темно-зелений
+                };
+            }
+        }
+
+
+        function displayRadiationIndex(containerElement, index) {
+            if (!containerElement) return;
+
+
+            containerElement.innerHTML = '';
+
+
+            if (index <= 0) return;
+
+
+            const radiationClass = getRadiationClass(index);
+
+
+            const html = `
+        <div class="radiation-index" style="background-color: ${radiationClass.color}; padding: 15px; border-radius: 5px; margin-bottom: 20px; color: white; text-align: center;">
+            <div class="index-value" style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">${index.toFixed(3)} мкЗв/год</div>
+            <div class="index-description">${radiationClass.description}</div>
+        </div>
+    `;
+
+
+            containerElement.innerHTML = html;
+        }
+
+
+
+
+        function calculateWaterQualityIndex(station) {
+
+            const waterParams = [
+                { name: "Каламутнiсть", gdkValue: 1.5 },
+                { name: "Забарвленiсть", gdkValue: 20 },
+                { name: "Загальна жорсткість", gdkValue: 7 },
+                { name: "Марганець", gdkValue: 0.05 },
+                { name: "Залізо загальне", gdkValue: 0.2 }
+            ];
+
+            let sum = 0;
+            let validParamsCount = 0;
+
+
+            for (let param of waterParams) {
+                const stationParam = station.parameters.find(p => p.name === param.name);
+                if (stationParam) {
+                    const value = parseFloat(stationParam.value);
+                    if (!isNaN(value) && value > 0) {
+                        sum += value / param.gdkValue;
+                        validParamsCount++;
+                    }
+                }
+            }
+
+
+            if (validParamsCount === 0) return 0;
+
+            return sum;
+        }
+
+
+        function getWaterQualityClass(index) {
+            if (index > 1.5) {
+                return {
+                    description: "Неприпустиме забруднення води",
+                    color: "#e74c3c" // Червоний
+                };
+            } else if (index > 1) {
+                return {
+                    description: "Перевищення норм якості води",
+                    color: "#f39c12" // Оранжевий
+                };
+            } else if (index > 0.7) {
+                return {
+                    description: "Задовільна якість води",
+                    color: "#f1c40f" // Жовтий
+                };
+            } else {
+                return {
+                    description: "Добра якість води",
+                    color: "#2ecc71" // Зелений
+                };
+            }
+        }
+
+
+        function displayWaterQualityIndex(containerElement, index) {
+            if (!containerElement) return;
+
+
+            containerElement.innerHTML = '';
+
+
+            if (index <= 0) return;
+
+
+            const waterClass = getWaterQualityClass(index);
+
+
+            const html = `
+        <div class="water-quality-index" style="background-color: ${waterClass.color}; padding: 15px; border-radius: 5px; margin-bottom: 20px; color: white; text-align: center;">
+            <div class="index-value" style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">${index.toFixed(2)}</div>
+            <div class="index-description">${waterClass.description}</div>
+        </div>
+    `;
+
+
+            containerElement.innerHTML = html;
+        }
+
+
+        function calculateCarbonEfficiencyIndex(station) {
+            if (station.subsystem !== 'energy') return 0;
+
+
+            let co2EmissionsParam, usefulOutputParam;
+
+
+            if (station.name.includes('ТЕЦ')) {
+                co2EmissionsParam = station.parameters.find(p => p.name === "Викиди CO2");
+                if (!co2EmissionsParam) return 0;
+
+
+                const co2EmissionsPerYear = co2EmissionsParam.value * 365;
+
+
+                const electricityParam = station.parameters.find(p => p.name === "Виробництво електроенергії");
+
+                const heatParam = station.parameters.find(p => p.name === "Виробництво теплової енергії");
+
+                if (!electricityParam || !heatParam) return 0;
+
+
+                const totalEnergyOutput = electricityParam.value + (heatParam.value * 1.163);
+
+
+                return co2EmissionsPerYear / totalEnergyOutput;
+            }
+
+            else {
+                co2EmissionsParam = station.parameters.find(p => p.name === "Викиди CO2");
+                if (!co2EmissionsParam) return 0;
+
+
+                const areaParam = station.parameters.find(p => p.name === "Торгова площа");
+                if (!areaParam) return 0;
+
+
+                return co2EmissionsParam.value / areaParam.value;
+            }
+        }
+
+
+        function getCarbonEfficiencyClass(index, isPlant = false) {
+            if (isPlant) {
+
+                if (index <= 0.05) {
+                    return {
+                        description: "Висока вуглецева ефективність",
+                        color: "#2ecc71" // Зелений
+                    };
+                } else if (index <= 0.07) {
+                    return {
+                        description: "Добра вуглецева ефективність",
+                        color: "#f1c40f" // Жовтий
+                    };
+                } else if (index <= 0.09) {
+                    return {
+                        description: "Середня вуглецева ефективність",
+                        color: "#f39c12" // Оранжевий
+                    };
+                } else {
+                    return {
+                        description: "Низька вуглецева ефективність",
+                        color: "#e74c3c" // Червоний
+                    };
+                }
+            } else {
+
+                if (index <= 0.15) {
+                    return {
+                        description: "Висока вуглецева ефективність",
+                        color: "#2ecc71" // Зелений
+                    };
+                } else if (index <= 0.25) {
+                    return {
+                        description: "Добра вуглецева ефективність",
+                        color: "#f1c40f" // Жовтий
+                    };
+                } else if (index <= 0.35) {
+                    return {
+                        description: "Середня вуглецева ефективність",
+                        color: "#f39c12" // Оранжевий
+                    };
+                } else {
+                    return {
+                        description: "Низька вуглецева ефективність",
+                        color: "#e74c3c" // Червоний
+                    };
+                }
+            }
+        }
+
+
+        function displayCarbonEfficiencyIndex(containerElement, index, isPlant = false) {
+            if (!containerElement) return;
+
+
+            containerElement.innerHTML = '';
+
+
+            if (index <= 0) return;
+
+
+            const efficiencyClass = getCarbonEfficiencyClass(index, isPlant);
+
+
+            const html = `
+        <div class="carbon-efficiency-index" style="background-color: ${efficiencyClass.color}; padding: 15px; border-radius: 5px; margin-bottom: 20px; color: white; text-align: center;">
+            <div class="index-value" style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">${index.toFixed(3)} ${isPlant ? 'т CO₂/МВт·год' : 'т CO₂/м²·рік'}</div>
+            <div class="index-description">${efficiencyClass.description}</div>
+        </div>
+    `;
+
+
+            containerElement.innerHTML = html;
+        }
+
+
+        function calculateOverallCarbonEfficiencyIndex(stations) {
+            if (!stations || stations.length === 0) return 0;
+
+
+            const plants = stations.filter(s => s.name.includes('ТЕЦ'));
+            const buildings = stations.filter(s => !s.name.includes('ТЕЦ'));
+
+
+            let plantIndex = 0;
+            let plantCount = 0;
+            let buildingIndex = 0;
+            let buildingCount = 0;
+
+
+            for (let plant of plants) {
+                const index = calculateCarbonEfficiencyIndex(plant);
+                if (index > 0) {
+
+                    const normalizedIndex = Math.max(0, Math.min(1, (index - 0.05) / 0.05));
+                    plantIndex += normalizedIndex;
+                    plantCount++;
+                }
+            }
+
+
+            for (let building of buildings) {
+                const index = calculateCarbonEfficiencyIndex(building);
+                if (index > 0) {
+
+                    const normalizedIndex = Math.max(0, Math.min(1, (index - 0.15) / 0.2));
+                    buildingIndex += normalizedIndex;
+                    buildingCount++;
+                }
+            }
+
+
+            if (plantCount > 0) plantIndex /= plantCount;
+            if (buildingCount > 0) buildingIndex /= buildingCount;
+
+
+            const totalCount = plantCount + buildingCount;
+            if (totalCount === 0) return 0;
+
+            return (plantIndex * plantCount + buildingIndex * buildingCount) / totalCount;
+        }
+
+
+        function displayOverallCarbonEfficiencyIndex(containerElement, index) {
+            if (!containerElement) return;
+
+
+            containerElement.innerHTML = '';
+
+
+            if (index < 0) return;
+
+
+            let efficiencyClass;
+            if (index <= 0.25) {
+                efficiencyClass = {
+                    description: "Висока вуглецева ефективність",
+                    color: "#2ecc71" // Зелений
+                };
+            } else if (index <= 0.5) {
+                efficiencyClass = {
+                    description: "Добра вуглецева ефективність",
+                    color: "#f1c40f" // Жовтий
+                };
+            } else if (index <= 0.75) {
+                efficiencyClass = {
+                    description: "Середня вуглецева ефективність",
+                    color: "#f39c12" // Оранжевий
+                };
+            } else {
+                efficiencyClass = {
+                    description: "Низька вуглецева ефективність",
+                    color: "#e74c3c" // Червоний
+                };
+            }
+
+
+            const html = `
+        <div class="carbon-efficiency-index" style="background-color: ${efficiencyClass.color}; padding: 15px; border-radius: 5px; margin-bottom: 20px; color: white; text-align: center;">
+            <div class="index-value" style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">${(index * 100).toFixed(1)}%</div>
+            <div class="index-description">${efficiencyClass.description}</div>
+        </div>
+    `;
+
+
+            containerElement.innerHTML = html;
+        }
+
+        async function initApp() {
+            console.log('Завантаження даних...');
+
+            try {
+                const rawData = await fetchDataFromSheetDB();
+
+                if (rawData && rawData.objects && rawData.objects.length > 0) {
+                    objects = processSheetData(rawData);
+                    console.log('Дані успішно завантажено з SheetDB');
+                } else {
+                    console.warn('Не вдалося завантажити дані з SheetDB.');
+                }
+            } catch (error) {
+                console.error('Помилка при ініціалізації:', error);
+            }
+
+            if (!objects) {
+                console.error('Критична помилка: Не вдалося завантажити дані!');
+                document.getElementById('object-info').innerHTML =
+                    '<p style="color: red">Помилка завантаження даних. Будь ласка, оновіть сторінку або зверніться до адміністратора.</p>';
+                return;
+            }
+
+            window.filteredObjects = [...objects];
+            createMarkers();
+            renderObjectList();
+
+            const currentDate = new Date();
+            const dateString = currentDate.toLocaleDateString('uk-UA', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const infoBlock = document.createElement('div');
+            infoBlock.className = 'date-info';
+            infoBlock.innerHTML = `<small>Дані оновлено: ${dateString}</small>`;
+            document.querySelector('.filter-panel').appendChild(infoBlock);
+        }
+
+        window.onload = initApp;
+
+    </script>
